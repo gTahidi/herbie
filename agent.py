@@ -8,6 +8,9 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.embeddings import Embeddings
+from dataclasses import dataclass,field
+from langchain.callbacks.base import BaseCallbackHandler
+from langchain.callbacks.manager import CallbackManager
 
 @dataclass
 class AgentConfig: 
@@ -37,7 +40,7 @@ class AgentConfig:
     code_exec_ssh_user: str = "root"
     code_exec_ssh_pass: str = "toor"
     additional: Dict[str, Any] = field(default_factory=dict)
-    
+    callback_manager: Optional[CallbackManager] = None
 
 class Agent:
 
@@ -62,6 +65,7 @@ class Agent:
         self.intervention_status = False
         self.rate_limiter = rate_limiter.RateLimiter(max_calls=self.config.rate_limit_requests,max_input_tokens=self.config.rate_limit_input_tokens,max_output_tokens=self.config.rate_limit_output_tokens,window_seconds=self.config.rate_limit_seconds)
         self.data = {} # free data object all the tools can use
+        self.callback_manager = config.callback_manager or CallbackManager([])
 
         os.chdir(files.get_abs_path("./work_dir")) #change CWD to work_dir
         
@@ -95,10 +99,13 @@ class Agent:
                     tokens = int(len(formatted_inputs)/4)     
                     self.rate_limiter.limit_call_and_input(tokens)
                     
+                    
                     # output that the agent is starting
                     PrintStyle(bold=True, font_color="green", padding=True, background_color="white").print(f"{self.agent_name}: Starting a message:")
-                                            
-                    for chunk in chain.stream(inputs):
+                    
+                    chat_model_with_callbacks = self.config.chat_model.with_config(callbacks=self.callback_manager.handlers)
+            
+                    for chunk in (prompt | chat_model_with_callbacks).stream(inputs):
                         if self.handle_intervention(agent_response): break # wait for intervention and handle it, if paused
 
                         if isinstance(chunk, str): content = chunk
@@ -157,8 +164,10 @@ class Agent:
         prompt = ChatPromptTemplate.from_messages([
             SystemMessage(content=system),
             HumanMessage(content=msg)])
-
-        chain = prompt | self.config.utility_model
+        
+        chat_model_with_callbacks = self.config.utility_model.with_config(callbacks=self.callback_manager.handlers)
+        
+        chain = prompt | chat_model_with_callbacks
         response = ""
         printer = None
 

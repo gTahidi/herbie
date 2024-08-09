@@ -6,7 +6,9 @@ from python.helpers.print_style import PrintStyle
 from python.helpers.files import read_file
 from python.helpers import files
 import python.helpers.timed_input as timed_input
-
+from langsmith import Client
+from langchain.callbacks.tracers.langchain import LangChainTracer
+from langchain.callbacks.manager import CallbackManager
 
 input_lock = threading.Lock()
 os.chdir(files.get_abs_path("./work_dir")) #change CWD to work_dir
@@ -41,11 +43,22 @@ def initialize():
     embedding_llm = models.get_embedding_openai()
     # embedding_llm = models.get_embedding_hf()
 
+    # langsmith setup
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+    os.environ["LANGCHAIN_API_KEY"] = "your_api_key_here"  # Replace with your actual API key
+     
+
+    client = Client()
+    tracer = LangChainTracer(project_name=os.environ["LANGCHAIN_PROJECT"])
+    callback_manager = CallbackManager([tracer])
+
     # agent configuration
     config = AgentConfig(
         chat_model = chat_llm,
         utility_model = utility_llm,
         embeddings_model = embedding_llm,
+        callback_manager = callback_manager,
         # memory_subdir = "",
         auto_memory_count = 0,
         # auto_memory_skip = 2,
