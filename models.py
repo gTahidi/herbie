@@ -57,15 +57,21 @@ def get_azure_openai_embedding(deployment_name:str, api_key=None, azure_endpoint
     return AzureOpenAIEmbeddings(azure_deployment=deployment_name, api_key=api_key, azure_endpoint=azure_endpoint) 
 
 
-def get_pinecone_embedding(model_name: str) -> Embeddings:
-    api_key = os.getenv("PINECONE_API_KEY")
-    if not api_key:
-        raise ValueError("PINECONE_API_KEY not found in environment variables")
+def get_pinecone_embedding(model_name: str, api_key=None, environment=None, index_name=None) -> Embeddings:
+    api_key = api_key or os.getenv("PINECONE_API_KEY")
+    environment = environment or os.getenv("PINECONE_ENVIRONMENT")
+    index_name = index_name or os.getenv("PINECONE_INDEX_NAME")
+    
+    if not api_key or not environment:
+        raise ValueError("PINECONE_API_KEY and PINECONE_ENVIRONMENT must be set in environment variables")
     
     async def create_embeddings():
-        return PineconeEmbeddings(
-            model=model_name
-        )
+        embedding_model = PineconeEmbeddings(model=model_name)
+        # embedding_model.pinecone_api_key = api_key
+        embedding_model.pinecone_index_name = index_name
+        embedding_model.pinecone_environment = environment
+        embedding_model.embedding_dimension = 1536  # Adjust this based on the specific model you're using
+        return embedding_model
     
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

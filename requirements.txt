@@ -10,3 +10,7 @@ docker==7.1.0
 duckduckgo_search==6.1.12
 inputimeout==1.0.4
 promptflow
+streamlit
+langchain_pinecone
+streamlit_card
+pinecone-client
