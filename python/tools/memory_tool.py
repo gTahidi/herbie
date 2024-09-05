@@ -5,7 +5,6 @@ from python.helpers import files
 import os, json
 from python.helpers.tool import Tool, Response
 from python.helpers.print_style import PrintStyle
-from chromadb.errors import InvalidDimensionException
 
 # TODO multiple DBs at once
 db: VectorDB | None= None
@@ -25,10 +24,11 @@ class Memory(Tool):
                 result = forget(self.agent, kwargs["forget"])
             elif "delete" in kwargs:
                 result = delete(self.agent, kwargs["delete"])
-        except InvalidDimensionException as e:
-            # hint about embedding change with existing database
-            PrintStyle.hint("If you changed your embedding model, you will need to remove contents of /memory directory.")
-            raise   
+        except Exception as e:
+            # General error handling
+            PrintStyle.error(f"An error occurred while accessing the vector database: {str(e)}")
+            PrintStyle.hint("If you changed your embedding model, you may need to recreate your Pinecone index.")
+            raise  
         
         # result = process_query(self.agent, self.args["memory"],self.args["action"], result_count=self.agent.config.auto_memory_count)
         return Response(message=result, break_loop=False)
