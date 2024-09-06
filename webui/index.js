@@ -243,6 +243,92 @@ function toggleCssProperty(selector, property, value) {
     }
 }
 
+window.templatesData = function() {
+    console.log("templatesData function called");
+    return {
+        templates: [],
+        showModal: false,
+        currentTemplate: {
+            id: '',
+            name: '',
+            url: '',
+            navigation_goal: '',
+            data_extraction_goal: '',
+            advanced_settings: {}
+        },
+
+        init() {
+            this.loadTemplates();
+        },
+
+        async loadTemplates() {
+            try {
+                const response = await sendJsonData("/templates", {});
+                if (response.ok) {
+                    this.templates = response.templates;
+                } else {
+                    console.error("Failed to load templates:", response.message);
+                }
+            } catch (error) {
+                console.error("Error loading templates:", error);
+            }
+        },
+
+        openNewTemplateModal() {
+            this.currentTemplate = {
+                id: '',
+                name: '',
+                url: '',
+                navigation_goal: '',
+                data_extraction_goal: '',
+                advanced_settings: {}
+            };
+            this.showModal = true;
+        },
+
+        editTemplate(template) {
+            this.currentTemplate = { ...template };
+            this.showModal = true;
+        },
+
+        closeModal() {
+            this.showModal = false;
+        },
+
+        async saveTemplate() {
+            const response = await sendJsonData("/save_template", this.currentTemplate);
+            if (response.ok) {
+                await this.loadTemplates();
+                this.closeModal();
+            } else {
+                alert("Error saving template: " + response.message);
+            }
+        },
+
+        async deleteTemplate(templateId) {
+            if (confirm("Are you sure you want to delete this template?")) {
+                const response = await sendJsonData("/delete_template", { id: templateId });
+                if (response.ok) {
+                    await this.loadTemplates();
+                } else {
+                    alert("Error deleting template: " + response.message);
+                }
+            }
+        },
+
+        async useTemplate(templateId) {
+            const response = await sendJsonData("/use_template", { template_id: templateId, context });
+            if (response.ok) {
+                // Refresh chat or update UI as needed
+                console.log("Template applied successfully");
+            } else {
+                alert("Error using template: " + response.message);
+            }
+        }
+    };
+}
+
 chatInput.addEventListener('input', adjustTextareaHeight);
 
 setInterval(poll, 250);
+

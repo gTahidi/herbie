@@ -12,6 +12,7 @@ from python.helpers.files import get_abs_path
 from python.helpers.print_style import PrintStyle
 from python.helpers.log import Log
 from dotenv import load_dotenv
+from python.helpers.template_manager import Template, load_templates, save_templates
 
 
 #initialize the internal Flask server
@@ -240,6 +241,68 @@ async def poll():
 
     #respond with json
     return jsonify(response)
+
+@app.route('/templates', methods=['GET'])
+async def get_templates():
+    templates = load_templates()
+    return jsonify({
+        "ok": True,
+        "templates": [template.to_dict() for template in templates]
+    })
+
+@app.route('/save_template', methods=['POST'])
+async def save_template():
+    data = request.get_json()
+    if not data or 'name' not in data:
+        return jsonify({"ok": False, "message": "Invalid template data"}), 400
+
+    new_template = Template(
+        id=data.get('id', str(uuid.uuid4())),
+        name=data['name'],
+        url=data.get('url', ''),
+        navigation_goal=data.get('navigation_goal', ''),
+        data_extraction_goal=data.get('data_extraction_goal', ''),
+        advanced_settings=data.get('advanced_settings', {})
+    )
+    templates = load_templates()
+    if data.get('id'):
+        templates = [new_template if t.id == new_template.id else t for t in templates]
+    else:
+        templates.append(new_template)
+    save_templates(templates)
+    return jsonify({"ok": True, "message": "Template saved successfully", "template": new_template.to_dict()})
+
+
+
+@app.route('/use_template', methods=['POST'])
+async def use_template():
+    data = request.get_json()
+    template_id = data['template_id']
+    context_id = data['context']
+    
+    templates = load_templates()
+    template = next((t for t in templates if t.id == template_id), None)
+    
+    if template:
+        context = get_context(context_id)
+        prompt = f"Execute template: {template.name}\nURL: {template.url}\nNavigation Goal: {template.navigation_goal}\nData Extraction Goal: {template.data_extraction_goal}"
+        if template.advanced_settings:
+            prompt += "\nAdvanced Settings: " + ", ".join(f"{k}: {v}" for k, v in template.advanced_settings.items())
+        
+        context.communicate(prompt)
+        
+        return jsonify({"ok": True, "message": "Template applied successfully"})
+    else:
+        return jsonify({"ok": False, "message": "Template not found"})
+
+@app.route('/delete_template', methods=['POST'])
+async def delete_template():
+    data = request.get_json()
+    template_id = data['id']
+    templates = load_templates()
+    templates = [t for t in templates if t.id != template_id]
+    save_templates(templates)
+    return jsonify({"ok": True, "message": "Template deleted successfully"})
 
 
 
