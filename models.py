@@ -8,7 +8,9 @@ from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI, HarmBlockThreshold, HarmCategory
 from pydantic.v1.types import SecretStr
-
+from pinecone import Pinecone, ServerlessSpec
+from langchain_pinecone import PineconeVectorStore
+from typing import Optional
 
 # Load environment variables
 load_dotenv()
@@ -71,7 +73,7 @@ def get_azure_openai_instruct(deployment_name:str, api_key=None, temperature=DEF
 def get_azure_openai_embedding(deployment_name:str, api_key=None, azure_endpoint=None):
     api_key = api_key or get_api_key("openai_azure")
     azure_endpoint = azure_endpoint or os.getenv("OPENAI_AZURE_ENDPOINT")
-    return AzureOpenAIEmbeddings(deployment_name=deployment_name, api_key=api_key, azure_endpoint=azure_endpoint) # type: ignore
+    return AzureOpenAIEmbeddings(azure_deployment=deployment_name, api_key=api_key, azure_endpoint=azure_endpoint) # type: ignore
 
 # Google models
 def get_google_chat(model_name:str, api_key=None, temperature=DEFAULT_TEMPERATURE):
@@ -94,3 +96,17 @@ def get_embedding_hf(model_name="sentence-transformers/all-MiniLM-L6-v2"):
 def get_embedding_openai(api_key=None):
     api_key = api_key or get_api_key("openai")
     return OpenAIEmbeddings(api_key=api_key) #type: ignore
+
+# Pinecone configuration
+def get_pinecone_store(embedding_model):
+    api_key = os.getenv("PINECONE_API_KEY")
+    index_name = os.getenv("PINECONE_INDEX_NAME")
+    environment = os.getenv("PINECONE_ENVIRONMENT")
+
+    if not api_key or not index_name or not environment:
+        raise ValueError("Pinecone environment variables are not set correctly.")
+
+    pc = Pinecone()
+
+    index = pc.Index(index_name)
+    return PineconeVectorStore(index=index, embedding=embedding_model)
