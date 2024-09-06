@@ -50,32 +50,14 @@
                 </ul>
             </div>
 
-            <div class="modal" x-show="showModal" @click.away="closeModal">
+            <div class="config-section" id="templates-section">
                 <h3>Templates</h3>
-                <button class="config-button" @click="openNewTemplateModal">Add New Template</button>
-                <ul class="template-list">
-                    <template x-for="template in templates" :key="template.id">
-                        <li class="template-item">
-                            <span class="template-name" x-text="template.name" @click="useTemplate(template.id)"></span>
-                            <div class="template-actions">
-                                <button class="edit-button" @click="editTemplate(template)">Edit</button>
-                                <button class="delete-button" @click="deleteTemplate(template.id)">Delete</button>
-                            </div>
-                        </li>
-                    </template>
-                </ul>
+                <button class="config-button" id="addTemplateBtn">Add New Template</button>
+                <ul class="template-list"></ul>
             
-                <div class="modal" :class="{ 'show': showModal }" @click.away="closeModal">
+                <div class="modal" id="templateModal">
                     <div class="modal-content">
-                        <h2 x-text="currentTemplate.id ? 'Edit Template' : 'New Template'"></h2>
-                        <input type="text" x-model="currentTemplate.name" placeholder="Template Name">
-                        <input type="text" x-model="currentTemplate.url" placeholder="URL">
-                        <textarea x-model="currentTemplate.navigation_goal" placeholder="Navigation Goal"></textarea>
-                        <textarea x-model="currentTemplate.data_extraction_goal" placeholder="Data Extraction Goal"></textarea>
-                        <div class="modal-actions">
-                            <button class="save-button" @click="saveTemplate">Save</button>
-                            <button class="cancel-button" @click="closeModal">Cancel</button>
-                        </div>
+                        <!-- Modal content will be dynamically inserted here -->
                     </div>
                 </div>
             </div>

@@ -242,7 +242,7 @@ async def poll():
     #respond with json
     return jsonify(response)
 
-@app.route('/templates', methods=['GET'])
+@app.route('/templates', methods=['POST'])
 async def get_templates():
     templates = load_templates()
     return jsonify({
