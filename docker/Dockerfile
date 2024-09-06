@@ -1,10 +1,7 @@
-# Use the latest slim version of Debian
-FROM --platform=$TARGETPLATFORM debian:bookworm-slim
+# Use the latest version of Kali Linux
+FROM kalilinux/kali-rolling
 
-# Set ARG for platform-specific commands
-ARG TARGETPLATFORM
-
-# Update and install necessary packages
+# Update and install necessary packages for pentesting
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -13,10 +10,21 @@ RUN apt-get update && apt-get install -y \
     npm \
     openssh-server \
     sudo \
+    nmap \
+    metasploit-framework \
+    hydra \
+    john \
+    wireshark \
+    netcat-openbsd \
+    aircrack-ng \
+    sqlmap \
+    dirbuster \
+    nikto \
+    zaproxy \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up SSH
-RUN mkdir /var/run/sshd && \
+RUN mkdir -p /var/run/sshd && \
     echo 'root:toor' | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
@@ -39,5 +47,3 @@ EXPOSE 22
 
 # Init .bashrc
 CMD ["/usr/local/bin/initialize.sh"]
-
-
