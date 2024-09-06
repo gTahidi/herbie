@@ -14,5 +14,13 @@
     "navigation_goal": "check subdomains",
     "data_extraction_goal": "list of subdomains",
     "advanced_settings": {}
+  },
+  {
+    "id": "",
+    "name": "gvtscan",
+    "url": "41.76.171.36",
+    "navigation_goal": "scan the A records given and identify the open ports",
+    "data_extraction_goal": "identify open ports for exploits ",
+    "advanced_settings": {}
   }
 ]
