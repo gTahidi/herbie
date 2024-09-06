@@ -42,7 +42,7 @@ def initialize():
         # response_timeout_seconds = 60,
         code_exec_docker_enabled = True,
         code_exec_docker_name = "herbie",
-        code_exec_docker_image = "dante254/herbie-exe:latest",
+        code_exec_docker_image = "dante254/herbie:latest",
         code_exec_docker_ports = { "22/tcp": 50022 },
        # code_exec_docker_volumes = { files.get_abs_path("work_dir"): {"bind": "/root", "mode": "rw"} },
         #code_exec_ssh_enabled = True,
