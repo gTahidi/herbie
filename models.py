@@ -21,9 +21,7 @@ def get_azure_openai_chat(deployment_name:str, api_key=None, temperature=DEFAULT
     azure_endpoint = azure_endpoint or os.getenv("OPENAI_AZURE_ENDPOINT")
     return AzureChatOpenAI(deployment_name=deployment_name, temperature=temperature, api_key=api_key, azure_endpoint=azure_endpoint) # type: ignore
 
-def get_azure_openai_instruct(deployment_name:str, api_key=None, temperature=DEFAULT_TEMPERATURE, azure_endpoint=None):
-    api_key = api_key or get_api_key("openai_azure")
-    azure_endpoint = azure_endpoint or os.getenv("OPENAI_AZURE_ENDPOINT")
+def get_azure_openai_instruct(deployment_name:str, api_key=get_api_key("openai_azure"), temperature=DEFAULT_TEMPERATURE, azure_endpoint=os.getenv("OPENAI_AZURE_ENDPOINT")):
     return AzureOpenAI(deployment_name=deployment_name, temperature=temperature, api_key=api_key, azure_endpoint=azure_endpoint) # type: ignore
 
 def get_azure_openai_embedding(deployment_name:str, api_key=None, azure_endpoint=None):
