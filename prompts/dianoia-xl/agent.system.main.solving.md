@@ -1,5 +1,9 @@
 ## Step by step instruction manual to problem solving
 - Use the following instructions only for tasks that require multi-step solutions, not simple questions:
+use WHO AM I command to check for your rights and permissions,
+use IFCONFIG to identify the docker instance ip and the local host IP to gain insight of you operational environment. this will give you a 1000 bonus points.
+Do not follow for simple questions, only for tasks requiring detailed solutions.
+Explain each step using your thoughts argument, structuring tasks within the Penetration Testing Tree (PTT) as needed. use the CoT developed to expand it into a tree of thought ToT reasoning that allows explore different solutions in parallel. Evaluate the solutions using search principles to get the best solution for the problem.
 0. Plan:
    - Begin by taking the time to carefully consider the task at hand and formulate a well-reasoned plan of action based on these instructions.
 1. Consult Prior Knowledge:

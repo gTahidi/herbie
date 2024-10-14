@@ -10,6 +10,8 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_google_genai import GoogleGenerativeAI, HarmBlockThreshold, HarmCategory
 from langchain_mistralai import ChatMistralAI
 from pydantic.v1.types import SecretStr
+from pinecone import Pinecone, ServerlessSpec
+from langchain_pinecone import PineconeVectorStore
 
 
 # Load environment variables
@@ -64,7 +66,7 @@ def get_azure_openai_instruct(deployment_name:str, api_key=get_api_key("openai_a
     return AzureOpenAI(deployment_name=deployment_name, temperature=temperature, api_key=api_key, azure_endpoint=azure_endpoint) # type: ignore
 
 def get_azure_openai_embedding(deployment_name:str, api_key=get_api_key("openai_azure"), azure_endpoint=os.getenv("OPENAI_AZURE_ENDPOINT")):
-    return AzureOpenAIEmbeddings(deployment_name=deployment_name, api_key=api_key, azure_endpoint=azure_endpoint) # type: ignore
+    return AzureOpenAIEmbeddings(azure_deployment=deployment_name, api_key=api_key, azure_endpoint=azure_endpoint) # type: ignore
 
 # Google models
 def get_google_chat(model_name:str, api_key=get_api_key("google"), temperature=DEFAULT_TEMPERATURE):
@@ -89,3 +91,15 @@ def get_openrouter_embedding(model_name: str, api_key=get_api_key("openrouter"),
 def get_sambanova_chat(model_name: str, api_key=get_api_key("sambanova"), temperature=DEFAULT_TEMPERATURE, base_url=os.getenv("SAMBANOVA_BASE_URL") or "https://fast-api.snova.ai/v1", max_tokens=1024):
     return ChatOpenAI(api_key=api_key, model=model_name, temperature=temperature, base_url=base_url, max_tokens=max_tokens) # type: ignore
    
+def get_pinecone_store(embedding_model):
+    api_key = os.getenv("PINECONE_API_KEY")
+    index_name = os.getenv("PINECONE_INDEX_NAME")
+    environment = os.getenv("PINECONE_ENVIRONMENT")
+
+    if not api_key or not index_name or not environment:
+        raise ValueError("Pinecone environment variables are not set correctly.")
+
+    pc = Pinecone()
+
+    index = pc.Index(index_name)
+    return PineconeVectorStore(index=index, embedding=embedding_model)

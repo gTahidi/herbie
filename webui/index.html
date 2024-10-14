@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agent Zero</title>
+    <title>Herbie</title>
     <link rel="stylesheet" href="index.css">
     <link rel="stylesheet" href="toast.css">
 
@@ -106,29 +106,28 @@
                             <span class="slider"></span>
                         </label>
                     </li>
-
                 </ul>
-                <span id="a0version">Agent Zero 0.7<br>built on 2024-10-6</span>
+                <span id="a0version">Herbie 0.7<br>built on 2024-10-6</span>
             </div>
         </div>
         <div id="right-panel" class="panel">
-            <div id="logo-container">
-                <a href="https://github.com/frdel/agent-zero" target="_blank" rel="noopener noreferrer">
-                    <img src="splash.jpg" alt="a0" width="48" height="48">
-                </a>
-                <div id="time-date"></div>
-            </div>
+            <div id="time-date"></div>
             <!--Chat-->
             <div id="chat-history">
             </div>
+
             <div id="toast" class="toast">
                 <div class="toast__message"></div>
                 <button class="toast__copy">Copy</button>
                 <button class="toast__close">Close</button>
             </div>
+
             <div id="progress-bar-box">
                 <h4 id="progress-bar-h"><span id="progress-bar-i">|></span><span id="progress-bar"></span></h4>
             </div>
+            
+
+
             <div id="input-section" x-data="{ paused: false }">
                 <textarea id="chat-input" placeholder="Type your message here..." rows="1"></textarea>
                 <button class="chat-button" id="send-button" aria-label="Send message">
@@ -151,6 +150,8 @@
             </div>
         </div>
     </div>
+    
+
 </body>
 
 </html>

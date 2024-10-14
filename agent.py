@@ -104,8 +104,8 @@ class AgentConfig:
     response_timeout_seconds: int = 60
     max_tool_response_length: int = 3000
     code_exec_docker_enabled: bool = True
-    code_exec_docker_name: str = "agent-zero-exe"
-    code_exec_docker_image: str = "frdel/agent-zero-exe:latest"
+    code_exec_docker_name: str = "herbie"
+    code_exec_docker_image: str = "dante254/herbie:latest"
     code_exec_docker_ports: dict[str, int] = field(
         default_factory=lambda: {"22/tcp": 50022}
     )
@@ -115,11 +115,11 @@ class AgentConfig:
             files.get_abs_path("instruments"): {"bind": "/instruments", "mode": "rw"},
         }
     )
-    code_exec_ssh_enabled: bool = True
-    code_exec_ssh_addr: str = "localhost"
-    code_exec_ssh_port: int = 50022
-    code_exec_ssh_user: str = "root"
-    code_exec_ssh_pass: str = "toor"
+    # code_exec_ssh_enabled: bool = True
+    # code_exec_ssh_addr: str = "localhost"
+    # code_exec_ssh_port: int = 50022
+    # code_exec_ssh_user: str = "root"
+    # code_exec_ssh_pass: str = "toor"
     additional: Dict[str, Any] = field(default_factory=dict)
 
 
