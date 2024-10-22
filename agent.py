@@ -118,7 +118,7 @@ class AgentConfig:
     chat_model: BaseChatModel | BaseLLM
     utility_model: BaseChatModel | BaseLLM
     embeddings_model: Embeddings
-    prompts_subdir: str = ""
+    prompts_subdir: str = "dianoia-xl"
     memory_subdir: str = ""
     knowledge_subdirs: list[str] = field(default_factory=lambda: ["default", "custom"])
     auto_memory_count: int = 3

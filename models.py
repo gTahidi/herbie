@@ -11,6 +11,7 @@ from langchain_mistralai import ChatMistralAI
 from pydantic.v1.types import SecretStr
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
+from python.helpers.dotenv import load_dotenv
 
 # environment variables
 load_dotenv()
