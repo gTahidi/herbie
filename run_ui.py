@@ -8,15 +8,16 @@ from flask import Flask, request, jsonify, Response
 from flask_basicauth import BasicAuth
 from agent import AgentContext
 from initialize import initialize
+from python.helpers import files
 from python.helpers.files import get_abs_path
 from python.helpers.print_style import PrintStyle
-from dotenv import load_dotenv
+from python.helpers.dotenv import load_dotenv
+from python.helpers import persist_chat
 
-load_dotenv()
 
 # initialize the internal Flask server
 app = Flask("app", static_folder=get_abs_path("./webui"), static_url_path="/")
-app.config['JSON_SORT_KEYS'] = False  # Disable key sorting in jsonify
+app.config["JSON_SORT_KEYS"] = False  # Disable key sorting in jsonify
 
 lock = threading.Lock()
 
@@ -120,6 +121,7 @@ async def handle_message(sync: bool):
             response = {
                 "ok": True,
                 "message": result,
+                "context": context.id,
             }
         else:
 
@@ -127,6 +129,7 @@ async def handle_message(sync: bool):
             response = {
                 "ok": True,
                 "message": "Message received.",
+                "context": context.id,
             }
 
     except Exception as e:
@@ -172,6 +175,66 @@ async def pause():
     return jsonify(response)
 
 
+# load chats from json
+@app.route("/loadChats", methods=["POST"])
+async def load_chats():
+    try:
+        # data sent to the server
+        input = request.get_json()
+        chats = input.get("chats", [])
+        if not chats:
+            raise Exception("No chats provided")
+
+        ctxids = persist_chat.load_json_chats(chats)
+
+        response = {
+            "ok": True,
+            "message": "Chats loaded.",
+            "ctxids": ctxids,
+        }
+
+    except Exception as e:
+        response = {
+            "ok": False,
+            "message": str(e),
+        }
+        PrintStyle.error(str(e))
+
+    # respond with json
+    return jsonify(response)
+
+
+# load chats from json
+@app.route("/exportChat", methods=["POST"])
+async def export_chat():
+    try:
+        # data sent to the server
+        input = request.get_json()
+        ctxid = input.get("ctxid", "")
+        if not ctxid:
+            raise Exception("No context id provided")
+
+        context = get_context(ctxid)
+        content = persist_chat.export_json_chat(context)
+
+        response = {
+            "ok": True,
+            "message": "Chats loaded.",
+            "ctxid": context.id,
+            "content": content,
+        }
+
+    except Exception as e:
+        response = {
+            "ok": False,
+            "message": str(e),
+        }
+        PrintStyle.error(str(e))
+
+    # respond with json
+    return jsonify(response)
+
+
 # restarting with new agent0
 @app.route("/reset", methods=["POST"])
 async def reset():
@@ -184,6 +247,7 @@ async def reset():
         # context instance - get or create
         context = get_context(ctxid)
         context.reset()
+        persist_chat.save_tmp_chat(context)
 
         response = {
             "ok": True,
@@ -212,6 +276,7 @@ async def remove():
 
         # context instance - get or create
         AgentContext.remove(ctxid)
+        persist_chat.remove_chat(ctxid)
 
         response = {
             "ok": True,
@@ -236,7 +301,7 @@ async def poll():
 
         # data sent to the server
         input = request.get_json()
-        ctxid = input.get("context", uuid.uuid4())
+        ctxid = input.get("context", None)
         from_no = input.get("log_from", 0)
 
         # context instance - get or create
@@ -283,8 +348,14 @@ async def poll():
     # return jsonify(response)
 
 
-# run the internal server
-if __name__ == "__main__":
+def run():
+    print("Initializing framework...")
+
+    # load env vars
+    load_dotenv()
+
+    # initialize contexts from persisted chats
+    persist_chat.load_tmp_chats()
 
     # Suppress only request logs but keep the startup messages
     from werkzeug.serving import WSGIRequestHandler
@@ -296,3 +367,8 @@ if __name__ == "__main__":
     # run the server on port from .env
     port = int(os.environ.get("WEB_UI_PORT", 0)) or None
     app.run(request_handler=NoRequestLoggingWSGIRequestHandler, port=port)
+
+
+# run the internal server
+if __name__ == "__main__":
+    run()

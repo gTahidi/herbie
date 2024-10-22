@@ -1,5 +1,4 @@
 import os
-from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI, OpenAI, OpenAIEmbeddings, AzureChatOpenAI, AzureOpenAIEmbeddings, AzureOpenAI
 from langchain_community.llms.ollama import Ollama
 from langchain_ollama import ChatOllama
@@ -13,8 +12,7 @@ from pydantic.v1.types import SecretStr
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
 
-
-# Load environment variables
+# environment variables
 load_dotenv()
 
 # Configuration

@@ -1,10 +1,18 @@
 **/.DS_Store
 **/.env
 **/__pycache__/
+**/.conda/
 
+# Ignore git (for bundler)
+.git/
 
 # Ignore all contents of the virtual environment directory
-.venv/*
+.venv/
+
+# ignore all folders under /bundle
+bundle/*/
+# except some
+!bundle/mac_pkg_scripts
 
 # Ignore all contents of the directory "work_dir"
 work_dir/*
