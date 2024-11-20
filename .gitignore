@@ -8,6 +8,9 @@
 
 # Ignore all contents of the virtual environment directory
 .venv/
+agent/*
+
+
 
 # ignore all folders under /bundle
 bundle/*/

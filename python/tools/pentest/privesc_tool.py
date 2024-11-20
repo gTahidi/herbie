@@ -1,0 +1,97 @@
+import asyncio
+import json
+from dataclasses import dataclass
+from python.helpers.tool import Tool, Response
+from python.helpers.print_style import PrintStyle
+from python.helpers.docker import DockerContainerManager
+
+@dataclass
+class State:
+    docker: DockerContainerManager
+    current_target: str = None
+    scan_results: dict = None
+    vuln_results: dict = None
+
+class PrivEscTool(Tool):
+    async def execute(self, **kwargs):
+        await self.agent.handle_intervention()
+        await self.prepare_state()
+
+        action = self.args.get("action", "").lower().strip()
+        target = self.args.get("target", "").strip()
+
+        if not target:
+            return Response(
+                message=self.agent.read_prompt("pentest/privesc_tool_usage.md"),
+                break_loop=False
+            )
+
+        if action == "enumerate":
+            response = await self.enumerate_target(target)
+        elif action == "check_vulns":
+            response = await self.check_vulnerabilities(target)
+        elif action == "exploit":
+            response = await self.attempt_exploit(target)
+        else:
+            response = self.agent.read_prompt("pentest/privesc_tool_usage.md")
+
+        return Response(message=response, break_loop=False)
+
+    async def prepare_state(self):
+        if not hasattr(self.agent.state, "pentest"):
+            self.agent.state.pentest = State(
+                docker=DockerContainerManager(self.agent.context)
+            )
+
+    async def enumerate_target(self, target):
+        # Execute enumeration commands in Docker
+        commands = [
+            f"whoami",
+            f"id",
+            f"uname -a",
+            f"cat /etc/passwd",
+            f"ps aux",
+            f"netstat -tuln"
+        ]
+        
+        results = {}
+        for cmd in commands:
+            output = await self.agent.state.pentest.docker.execute(cmd)
+            results[cmd] = output.strip()
+
+        self.agent.state.pentest.scan_results = results
+        return json.dumps(results, indent=2)
+
+    async def check_vulnerabilities(self, target):
+        checks = self.args.get("checks", ["kernel", "sudo", "suid"])
+        results = {}
+
+        # Basic vulnerability checks
+        if "sudo" in checks:
+            sudo_check = await self.agent.state.pentest.docker.execute("sudo -l")
+            results["sudo"] = sudo_check.strip()
+
+        if "suid" in checks:
+            suid_check = await self.agent.state.pentest.docker.execute("find / -perm -4000 2>/dev/null")
+            results["suid"] = suid_check.strip()
+
+        if "kernel" in checks:
+            kernel_check = await self.agent.state.pentest.docker.execute("uname -r")
+            results["kernel"] = kernel_check.strip()
+
+        self.agent.state.pentest.vuln_results = results
+        return json.dumps(results, indent=2)
+
+    async def attempt_exploit(self, target):
+        vuln_id = self.args.get("vuln_id")
+        if not vuln_id:
+            return "Error: No vulnerability ID specified for exploitation"
+
+        # Example exploit for sudo NOPASSWD
+        if vuln_id == "sudo_nopasswd_all":
+            result = await self.agent.state.pentest.docker.execute("sudo -l | grep NOPASSWD")
+            if "NOPASSWD" in result:
+                exploit = await self.agent.state.pentest.docker.execute("sudo /bin/bash")
+                return f"Exploit attempt result:\n{exploit}"
+
+        return f"No exploit available for vulnerability ID: {vuln_id}"
