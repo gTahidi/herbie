@@ -76,13 +76,14 @@ def _serialize_context(context: AgentContext):
 
 def _serialize_agent(agent: Agent):
     data = {k: v for k, v in agent.data.items() if not k.startswith("_")}
-
-    history = agent.history.serialize()
+    
+    # Get history as dictionary
+    history_data = agent.history.to_dict()
 
     return {
         "number": agent.number,
         "data": data,
-        "history": history,
+        "history": history_data,
     }
 
 
@@ -136,9 +137,22 @@ def _deserialize_agents(
             context=context,
         )
         current.data = ag.get("data", {})
-        current.history = history.deserialize_history(
-            ag.get("history", ""), agent=current
-        )
+        
+        # Create new History instance
+        current.history = history.History(agent=current)
+        
+        # Get history data and parse it if it's a string
+        history_data = ag.get("history")
+        if history_data:  # Only try to deserialize if we have data
+            if isinstance(history_data, str):
+                try:
+                    history_data = json.loads(history_data)
+                except json.JSONDecodeError:
+                    history_data = None
+                    
+            if history_data and isinstance(history_data, dict):
+                current.history = history.History.from_dict(history_data, history=current.history)
+        
         if not zero:
             zero = current
 

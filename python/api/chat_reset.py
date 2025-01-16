@@ -13,5 +13,5 @@ class Reset(ApiHandler):
         persist_chat.save_tmp_chat(context)
 
         return {
-            "message": "Agent restarted.",
+            "message": "Herbie restarted.",
         }

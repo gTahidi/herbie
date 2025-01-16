@@ -470,7 +470,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
 
     agent_fields.append(
         {
-            "id": "agent_knowledge_subdirs",
+            "id": "agent_knowledge_subdir",
             "title": "Knowledge subdirectory",
             "description": "Subdirectory of /knowledge folder to use for agent knowledge import. 'default' subfolder is always imported and contains framework knowledge.",
             "type": "select",
@@ -773,8 +773,8 @@ def get_default_settings() -> Settings:
     from models import ModelProvider
 
     return Settings(
-        chat_model_provider=ModelProvider.OPENAI.name,
-        chat_model_name="gpt-4o-mini",
+        chat_model_provider=ModelProvider.OPENAI_AZURE.name,
+        chat_model_name="gpt-4o-2",
         chat_model_temperature=0.0,
         chat_model_kwargs={},
         chat_model_ctx_length=120000,
@@ -782,8 +782,8 @@ def get_default_settings() -> Settings:
         chat_model_rl_requests=0,
         chat_model_rl_input=0,
         chat_model_rl_output=0,
-        util_model_provider=ModelProvider.OPENAI.name,
-        util_model_name="gpt-4o-mini",
+        util_model_provider=ModelProvider.OPENAI_AZURE.name,
+        util_model_name="gpt-4o-2",
         util_model_temperature=0.0,
         util_model_ctx_length=120000,
         util_model_ctx_input=0.7,
@@ -791,7 +791,7 @@ def get_default_settings() -> Settings:
         util_model_rl_requests=60,
         util_model_rl_input=0,
         util_model_rl_output=0,
-        embed_model_provider=ModelProvider.OPENAI.name,
+        embed_model_provider=ModelProvider.OPENAI_AZURE.name,
         embed_model_name="text-embedding-3-small",
         embed_model_kwargs={},
         embed_model_rl_requests=0,
@@ -800,12 +800,12 @@ def get_default_settings() -> Settings:
         auth_login="",
         auth_password="",
         root_password="",
-        agent_prompts_subdir="default",
+        agent_prompts_subdir="reflection",
         agent_memory_subdir="default",
         agent_knowledge_subdir="custom",
         rfc_auto_docker=True,
         rfc_url="localhost",
-        rfc_password="",
+        rfc_password="development",
         rfc_port_http=55080,
         rfc_port_ssh=55022,
         stt_model_size="base",

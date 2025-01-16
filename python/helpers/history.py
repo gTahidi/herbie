@@ -289,9 +289,19 @@ class History(Record):
 
     @staticmethod
     def from_dict(data: dict, history: "History"):
-        history.bulks = [Bulk.from_dict(b, history=history) for b in data["bulks"]]
-        history.topics = [Topic.from_dict(t, history=history) for t in data["topics"]]
-        history.current = Topic.from_dict(data["current"], history=history)
+        # Handle case where data might be a list from old format
+        if isinstance(data, list):
+            return history
+            
+        # Ensure we have the expected keys
+        if not isinstance(data, dict) or "_cls" not in data:
+            return history
+            
+        history.bulks = [Bulk.from_dict(b, history=history) for b in data.get("bulks", [])]
+        history.topics = [Topic.from_dict(t, history=history) for t in data.get("topics", [])]
+        current = data.get("current", {})
+        if current:
+            history.current = Topic.from_dict(current, history=history)
         return history
 
     def to_dict(self):
